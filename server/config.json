@@ -1,0 +1,12 @@
+{
+	"http": {
+		"port": 8080
+	},
+	"https": {
+		"port": 8443,
+		"key": "ssl/key.pem",
+		"cert": "ssl/cert.pem"
+	},
+	"multithreading": true,
+	"secret": "change this to a long and secure passowrd"
+}

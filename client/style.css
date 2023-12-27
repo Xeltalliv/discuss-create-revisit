@@ -1,0 +1,351 @@
+html, body {
+	height: 100%;
+	margin: 0;
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+.fullscreen {
+	background-color: #aaaaaa;
+	height: 100%;
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.mainTitle {
+	margin: 0;
+}
+
+.connectTab {
+	background-color: #efefef;
+	padding: 3px 6px;
+	margin: 0 2px 0 0;
+	border: 0;
+	border-radius: 0;
+	border-top-right-radius: 3px;
+	border-top-left-radius: 3px;
+}
+
+.connectTabSelected {
+	background-color: #dddddd;
+}
+
+.connectList {
+	padding: 10px;
+	background-color: #ffffff;
+	border-radius: 3px;
+	box-shadow: 0px 5px 5px #00000040;
+	border: 1px solid #aaaaaa;
+}
+
+.connectTabs {
+	display: flex;
+	flex-direction: row;
+}
+.connectTabContent {
+	display: flex;
+	flex-direction: column;
+	background-color: #dddddd;
+	padding: 4px;
+	align-items: center;
+}
+.connectOptionLeftRight {
+	width: 100%;
+	/*margin-bottom: 5px;*/
+	padding: 2px;
+	display: flex;
+	justify-content: space-between;
+}
+.connectOptionRight {
+	height: 20px;
+}
+.connectOptionLeft {
+}
+.disconnectReason {
+	background-color: #eeeeee;
+	padding: 2px;
+	margin: 2px;
+}
+.disconnectButtons {
+	display: flex;
+	flex-direction: column;
+	padding: 2px;
+	margin: 2px;
+	align-items: center;
+}
+.baseOuter {
+	display: flex;
+	align-items: stretch;
+	flex-direction: column;
+}
+.baseTop {
+	flex: 1;
+	display: flex;
+	flex-direction: row;
+	min-height: 0;
+}
+.baseTopLeft {
+	flex: 1;
+}
+.baseLeftMain {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+.baseLeftGrid {
+	background-color: #aaaaaa;
+	flex: 1;
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	padding: 5px;
+}
+.baseLeftGridPanel {
+	height: 50px;
+	box-shadow: inset 0 0 5px #00000055;
+	border-top: 1px solid #111111;
+	background-color: #888888;
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+}
+.baseLeftGridBG {
+	border-radius: 5px;
+	position: relative;
+	background-color: #eeeeee;
+	margin: 5px;
+	transition: opacity 0.3s ease-in-out;
+}
+.baseLeftGridVideo {
+	position: absolute;
+	margin: auto;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+    max-width: 100%;
+    max-height: 100%;
+}
+.baseLeftGridName {
+	position: absolute;
+	bottom: 5px;
+	left: 8px;
+}
+
+.baseLeftFullBG {
+	width: 100%;
+	height: 100%;
+	position: relative;
+	background-color: #eeeeee;
+}
+.baseLeftFullVideo {
+	position: absolute;
+	margin: auto;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+    max-width: 100%;
+    max-height: 100%;
+}
+.baseLeftFullName {
+	position: absolute;
+	bottom: 5px;
+	left: 5px;
+}
+.baseLeftFullButtonsRow {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	display: flex;
+	flex-direction: row-reverse;
+}
+.baseLeftFullButton {
+}
+.baseLeftFullBGMini {
+	width: 30%;
+	height: 30%;
+	bottom: 0;
+	right: 0;
+	position: absolute;
+}
+.baseLeftFullVideoMini {
+	position: absolute;
+	margin: auto;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.baseLeftBoardTextarea {
+	width: 100%;
+	height: 100%;
+	resize: none;
+	border: 0;
+	box-sizing: border-box;
+	outline: none;
+	-webkit-box-shadow: none;
+	-moz-box-shadow: none;
+	box-shadow: none;
+}
+.baseLeftBoardCanvas {
+	position: absolute;
+	margin: auto;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	max-width: 100%;
+	max-height: 100%;
+	box-shadow: 0 0 5px #00000022;
+}
+.baseLeftBoardStatusbar {
+	position: absolute;
+	top: 10px;
+	left: 25%;
+	right: 25%;
+	border-radius: 3px;
+	padding: 4px;
+	background-color: #ffffff88;
+}
+
+
+.baseTopRight {
+	width: 300px;
+	background-color: #222222;
+	transition: width 0.3s ease-in-out;
+	overflow: hidden;
+}
+.baseBottom {
+	height: 100px;
+	display: flex;
+	flex-direction: row;
+	background-color: #222222;
+	overflow-x: auto;
+}
+.baseBottomButton {
+	border-radius: 4px;
+	border: 1px solid #666666;
+	margin: 10px;
+	aspect-ratio: 1;
+	word-wrap: break-word;
+}
+div {
+	box-sizing: border-box;
+}
+.baseRightMain {
+	border-left: 3px solid black;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+}
+.baseRightList {
+	box-shadow: 0 0 5px #00000055;
+	background-color: #ffffff40;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	min-height: 0;
+	overflow-y: auto;
+}
+.baseRightTitle {
+	margin: 8px;
+	display: block;
+	align-self: center;
+	color: white;
+}
+.chatbox {
+	height: 40px;
+	display: flex;
+	flex-direction: row;
+}
+.chatboxInput {
+	flex: 1;
+}
+.chatboxSend {
+}
+.chatMessage {
+	background-color: #ffffff88;
+	margin: 5px;
+	padding: 5px;
+}
+.chatMessageAuthor {
+	font-weight: bold;
+}
+.boardsButtonsRow {
+	display: flex;
+	flex-direction: row;
+}
+.boardsButtonsRowButton {
+	flex: 1;
+}
+.usernameOuter {
+	background-color: #ffffff88;
+	margin: 5px;
+	padding: 5px;
+	display: flex;
+	flex-direction: column;
+}
+.usernameNameRow {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+.usernameNameContent {
+	flex: 1;
+}
+.usernameNameStatus {
+	width: 25px;
+	height: 25px;
+}
+.usernameNameExtra {
+	background-color: #aaffaa;
+	border: 1px solid #55aa55;
+	font-size: 14px;
+	border-radius: 3px;
+	padding: 1px 4px;
+	margin: 2px;
+}
+.hidden {
+	display: none;
+}
+.transparent {
+	opacity: 0;
+}
+.drawOption {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 40px;
+	background-color: #ffffff88;
+	margin: 4px;
+	padding: 4px;
+}
+
+.boardIconRight {
+	width: 64px;
+	height: 64px;
+}
+.boardIconGrid {
+	position: absolute;
+	width: 64px;
+	height: 64px;
+	bottom: 0;
+	right: 0;
+	border-radius: 3px;
+	background-color: #ffffff44;
+}
+.txtBoardIcon {
+	background-image: url("img/boardIcons/txt.png");
+}
+.imgBoardIcon {
+	background-image: url("img/boardIcons/img.png");
+}
