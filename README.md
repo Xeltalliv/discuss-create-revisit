@@ -1,4 +1,7 @@
-# Discuss Create Revisit (coursework)
+# Discuss Create Revisit (~~coursework 2023~~ diplomawork 2025)
+
+> [!NOTE]
+> Для дипломної роботи цей веб-застосунок скоро буде розширено новим функціоналом
 
 Веб-застосунок для відеоконференцій з системою багатьох дошок.
 Основана на WebRTC та бібліотеці [Mediasoup](https://mediasoup.org/).
