@@ -1,43 +1,42 @@
-function diff(a, b) {
+export function diff(a, b) {
 	let out = [];
 	let same = 0, start = 0, added = [];
-	for(let bi=0, ai=0; bi<b.length; bi++) {
+	for(let bi=0, ai=0; bi<b.length; bi++, ai++) {
 		if (b[bi] == a[ai]) {
 			if (added.length) {
 				out.push(added);
 				added = [];
 			}
-			if (same == 0) start = ai;
 			same++;
-			ai++;
 		} else {
+			if (same > 0) {
+				out.push([start, same]);
+				same = 0;
+			}
 			let ain = a.indexOf(b[bi], ai);
 			if (ain == -1) {
-				if (same) out.push([start, same]);
-				same = 0;
 				ain = a.indexOf(b[bi]);
 			}
 			if (ain == -1) {
-				if (same) out.push([start, same]);
-				same = 0;
 				added.push(b[bi]);
+				start = ai+1;
 			} else {
 				if (added.length) {
 					out.push(added);
 					added = [];
 				}
-				if (same == 0) start = ain;
-				same++;
-				ai = ain+1;
+				same = 1;
+				start = ain;
+				ai = ain;
 			}
 		}
 	}
-	if (same) out.push([start, same]);
+	if (same > 0) out.push([start, same]);
 	if (added.length) out.push(added);
 	return out;
 }
 
-function apply(a, tr) {
+export function apply(a, tr) {
 	let out = [];
 	for(let t of tr) {
 		if(typeof t[0] == "string") {
@@ -48,5 +47,3 @@ function apply(a, tr) {
 	}
 	return out.flat();
 }
-
-export {diff, apply};

@@ -1,14 +1,23 @@
-import { apply } from "../Utils/TextDiff.mjs";
-import BoardTxt from "./Board/BoardTxt.mjs";
-import BoardImg from "./Board/BoardImg.mjs";
+import { BoardTxt, BoardImg, BoardFolder } from "./Boards.mjs";
 
 const BoardTypes = {
 	"txt": BoardTxt,
 	"img": BoardImg,
+	"folder": BoardFolder,
 };
+
+class WaitingUser {
+	constructor(data) {
+		this.isWaiting = true;
+		this.id = data.id;
+		this.name = data.name;
+		this.joinTime = data.joinTime;
+	}
+}
 
 class User {
 	constructor(data) {
+		this.isWaiting = false;
 		this.id = data.id;
 		this.name = data.name;
 		this.isYou = data.isYou;
@@ -108,127 +117,202 @@ class User {
 	}
 }
 
-class UserManager {
-	constructor(main, baseUI) {
-		this.main = main;
+export class UserManager {
+	constructor(networkManager, baseUI) {
 		this.baseUI = baseUI;
+		this.networkManager = networkManager;
 		this.users = new Map();
+		this.waitingUsers = new Map();
 		this.me = null;
-		main.networkManager.addHandler("users", (op, data) => {
-			if (op == "addUsers") {
-				for(const user of data) {
-					const userObject = new User(user);
-					this.users.set(user.id, userObject);
-					if (user.isYou) this.me = userObject;
+	}
+	init() {
+		this.networkManager.addHandler("users", this.onMessage.bind(this));
+	}
+	onMessage(op, data) {
+		if (op == "addUsers") {
+			for(const user of data) {
+				const userObject = new User(user);
+				this.users.set(user.id, userObject);
+				if (user.isYou) {
+					this.updateMe(userObject);
+					this.me = userObject;
 				}
-				this.updateUserList();
 			}
-			if (op == "removeUsers") {
-				for(const userId of data) {
-					this.users.delete(userId);
-				}
-				this.updateUserList();
+			this.updateUserList();
+		}
+		if (op == "removeUsers") {
+			for(const userId of data) {
+				this.users.delete(userId);
 			}
-			if (op == "raiseHand") {
-				this.users.get(data.userId).handRaiseTime = data.time;
-				this.updateUserList();
+			this.updateUserList();
+		}
+		if (op == "addWaitingUsers") {
+			for(const user of data) {
+				const userObject = new WaitingUser(user);
+				this.waitingUsers.set(user.id, userObject);
 			}
-			if (op == "renameUser") {
-				this.users.get(data.userId).name = data.newName;
-				this.updateUserList();
+			this.updateUserList();
+		}
+		if (op == "removeWaitingUsers") {
+			for(const userId of data) {
+				this.waitingUsers.delete(userId);
 			}
-			if (op == "setBoard") {
-				this.users.get(data.userId).boards.set(data.boardId, new BoardTypes[data.board.type](data.boardId, data.userId, data.board));
-				this.updateBoardsOf(data.userId);
+			this.updateUserList();
+		}
+		if (op == "raiseHand") {
+			const user = this.users.get(data.userId);
+			user.handRaiseTime = data.time;
+			if (user.isYou) this.updateMyHandState(data.time > 0);
+			this.updateUserList();
+		}
+		if (op == "renameUser") {
+			this.users.get(data.userId).name = data.newName;
+			this.updateUserList();
+		}
+		if (op == "setBoard") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			user.boards.set(data.boardId, new BoardTypes[data.board.type](data.boardId, data.userId, data.board));
+			this.updateBoardsOf(user);
+		}
+		if (op == "checkBoard") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			const board = user.boards.get(data.boardId);
+			if (!board) return;
+			this.baseUI.topMain.selectBoard(user, board);
+		}
+		if (op == "editsBoard") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			user.editsBoard = data.board;
+			this.updateUserList();
+		}
+		if (op == "renameBoard") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			const board = user.boards.get(data.boardId);
+			if (!board) return;
+			board.name = data.newName;
+			this.updateBoardsOf(user);
+		}
+		if (op == "deleteBoard") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			user.boards.delete(data.boardId);
+			this.updateBoardsOf(user);
+		}
+		if (op == "moveBoards") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			for(const boardId of data.boardIds) {
+				const board = user.boards.get(boardId);
+				if (!board) continue;
+				board.folderId = data.folderId;
 			}
-			if (op == "checkBoard") {
-				baseUI.selectBoard(data.userId, data.boardId);
-			}
-			if (op == "editsBoard") {
-				const user = this.users.get(data.userId);
-				if (!user) return;
-				user.editsBoard = data.board;
-				this.updateUserList();
-			}
-			if (op == "renameBoard") {
-				const user = this.users.get(data.userId);
-				if (!user) return;
-				const board = user.boards.get(data.boardId);
-				if (!board) return;
-				board.name = data.newName;
-				this.updateBoardsOf(data.userId);
-			}
-			if (op == "deleteBoard") {
-				const user = this.users.get(data.userId);
-				if (!user) return;
-				user.boards.delete(data.boardId);
-				this.updateBoardsOf(data.userId);
-			}
-			if (op == "setBoardEditorId") {
-				const user = this.users.get(data.userId);
-				if (!user) return;
-				const board = user.boards.get(data.boardId);
-				if (!board) return;
-				board.editorId = data.editorId;
-				this.updateBoardEditor(data.userId, data.boardId);
-			}
-			if (op == "txtBoardApplyTransform") {
-				const user = this.users.get(data.userId);
-				if (!user) return;
-				const board = user.boards.get(data.boardId);
-				if (!board) return;
-				board.data = apply(board.data, data.transform);
-				this.updateBoardText(data.userId, data.boardId);
-			}
-			if (op == "imgBoardNewLine") {
-				const user = this.users.get(data.userId);
-				if (!user) return;
-				const board = user.boards.get(data.boardId);
-				if (!board) return;
-				board.addLineFromWS(data);
-			}
-			if (op == "imgBoardDeleteLine") {
-				const user = this.users.get(data.userId);
-				if (!user) return;
-				const board = user.boards.get(data.boardId);
-				if (!board) return;
-				board.deleteLine(data.lineId);
-				this.updateBoardImage(data.userId, data.boardId);
-			}
-			if (op == "points") {
-				const user = this.users.get(data.userId);
-				if (!user) return;
-				const board = user.boards.get(data.boardId);
-				if (!board) return;
-				board.addPoints(data.lineId, data.points);
-				this.updateBoardImage(data.userId, data.boardId);
-			}
-		});
+			this.updateBoardsOf(user);
+		}
+		if (op == "setBoardEditorId") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			const board = user.boards.get(data.boardId);
+			if (!board) return;
+			board.editorId = data.editorId;
+			this.updateBoardEditor(user, board);
+		}
+
+		if (op == "txtBoardApplyTransform") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			const board = user.boards.get(data.boardId);
+			if (!board) return;
+			board.transformText(data.transform);
+			if (board.upToDate) this.updateBoardText(user, board);
+		}
+		if (op == "txtBoardSetDisplayMode") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			const board = user.boards.get(data.boardId);
+			if (!board) return;
+			board.displayMode = data.displayMode;
+			this.updateBoardDisplayMode(user, board);
+		}
+		if (op == "imgBoardNewLine") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			const board = user.boards.get(data.boardId);
+			if (!board) return;
+			board.addLineFromWS(data);
+		}
+		if (op == "imgBoardDeleteLine") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			const board = user.boards.get(data.boardId);
+			if (!board) return;
+			board.deleteLine(data.lineId);
+			this.updateBoardImage(user, board);
+		}
+		if (op == "points") {
+			const user = this.users.get(data.userId);
+			if (!user) return;
+			const board = user.boards.get(data.boardId);
+			if (!board) return;
+			board.addPoints(data.lineId, data.points);
+			this.updateBoardImage(user, board);
+		}
 	}
 	reset() {
 		this.users.clear();
 	}
 	destroy() {
-		this.main.networkManager.removeHandler("users");
+		this.networkManager.removeHandler("users");
 	}
 	get(id) {
 		return this.users.get(id);
 	}
 	updateUserList() {
-		this.baseUI.updateUserList(Array.from(this.users.values()));
+		const users = Array.from(this.users.values());
+		const waitingUsers = Array.from(this.waitingUsers.values());
+		
+		for(const user of users) {
+			user.isVisible = false;
+			user.onMediaUpdate = null;
+		}
+		this.baseUI.rightPanel.userlistUI.setUsers(users, waitingUsers);
+		this.baseUI.topMain.setUsers(users);
+		this.baseUI.mediasoup.refreshUserVisibility(users);
 	}
-	updateBoardsOf(userId) {
-		this.baseUI.updateBoardsOf(userId);
+	updateBoardsOf(user) {
+		if (this.baseUI.rightPanel.boardsUI.user == user) {
+			this.baseUI.rightPanel.boardsUI.updateBoards();
+		}
 	}
-	updateBoardText(userId, boardId) {
-		this.baseUI.updateBoardText(userId, boardId);
+	updateBoardText(user, board) {
+		if (this.baseUI.topMain.btxtUI.board == board) {
+			this.baseUI.topMain.btxtUI.updateText();
+		}
 	}
-	updateBoardImage(userId, boardId) {
-		this.baseUI.updateBoardImage(userId, boardId);
+	updateBoardDisplayMode(user, board) {
+		if (this.baseUI.topMain.btxtUI.board == board) {
+			this.baseUI.topMain.btxtUI.updateDisplayMode();
+			this.baseUI.topMain.btxtUI.updateMarkdown();
+			this.baseUI.rightPanel.writeUI.updateDisplayMode();
+		}
 	}
-	updateBoardEditor(userId, boardId) {
-		this.baseUI.updateBoardEditor(userId, boardId);
+	updateBoardImage(user, board) {
+		if (this.baseUI.topMain.bimgUI.board == board) {
+			this.baseUI.topMain.bimgUI.updateImage();
+		}
+	}
+	updateBoardEditor(user, board) {
+		if (this.baseUI.topMain.btxtUI.board == board) {
+			this.baseUI.topMain.btxtUI.updateEditor();
+		}
+	}
+	updateMe(me) {
+		this.baseUI.rightPanel.settingsUI.setMe(me);
+	}
+	updateMyHandState(state) {
+		this.baseUI.bottomPanel.handButton.setActive(state);
 	}
 }
-
-export default UserManager;

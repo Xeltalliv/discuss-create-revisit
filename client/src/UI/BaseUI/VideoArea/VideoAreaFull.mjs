@@ -1,27 +1,39 @@
-class VideoAreaFull {
-	constructor(main, baseUI, videoArea) {
+import { getMainInstance } from "../../../main.mjs";
+import { VideoAreaBase } from "./VideoAreaBase.mjs";
+
+export class VideoAreaFull extends VideoAreaBase {
+	constructor() {
+		super();
 		const video = document.createElement("video");
 		video.classList.add("baseLeftFullVideo");
 		video.autoplay = true;
 		this.video = video;
 
 		const name = document.createElement("span");
-		name.textContent = "AAA";
 		name.classList.add("baseLeftFullName");
 		this.name = name;
 
-		const backButton = document.createElement("button");
-		backButton.classList.add("baseLeftFullButton");
-		backButton.textContent = "Back";
-		backButton.addEventListener("click", () => {
+		this.addButton("Back", () => {
 			this.swapped = false;
-			videoArea.setUI(videoArea.gridUI);
+			const baseUI = getMainInstance().baseUI;
+			baseUI.topMain.setUI(baseUI.topMain.gridUI);
 			baseUI.userManager.updateUserList();
 		});
 
-		const buttonsRow = document.createElement("div");
-		buttonsRow.classList.add("baseLeftFullButtonsRow");
-		buttonsRow.append(backButton);
+		const fullscreenButton = this.addButton("Enter fullscreen", () => {
+			if (!document.fullscreenElement) {
+				document.body.requestFullscreen();
+			} else {
+				document.exitFullscreen();
+			}
+		});
+		document.addEventListener("fullscreenchange", () => {
+			if (!document.fullscreenElement) {
+				fullscreenButton.textContent = "Enter fullscreen";
+			} else {
+				fullscreenButton.textContent = "Exit fullscreen";
+			}
+		});
 
 		const miniVideo = document.createElement("video");
 		miniVideo.classList.add("baseLeftFullVideoMini");
@@ -36,21 +48,16 @@ class VideoAreaFull {
 		miniEl.classList.add("baseLeftFullBGMini");
 		miniEl.append(miniVideo);
 
-		const el = document.createElement("div");
-		el.append(video, name, buttonsRow, miniEl);
-		el.classList.add("baseLeftFullBG");
-		this.el = el;
+		this.el.append(video, name, miniEl);
+		this.el.classList.add("baseLeftFullBG");
 		this.name = name;
 		this.hasVideo = null;
 		this.hasMiniVideo = null;
-		this.baseUI = baseUI;
 		this.user = null;
-		this.userId = 0;
 		this.swapped = false;
 	}
-	selectUser(userId) {
-		this.userId = userId;
-		this.user = this.baseUI.userManager.get(userId);
+	selectUser(user) {
+		this.user = user;
 	}
 	update(visible) {
 		const user = this.user;
@@ -74,7 +81,7 @@ class VideoAreaFull {
 
 		let mediaStreams = [user.mediaStreamPrimary, user.mediaStreamSecondary];
 		if (mediaStreams[1]) {
-			 if(this.swapped) mediaStreams = [mediaStreams[1], mediaStreams[0]]
+			if (this.swapped) mediaStreams = [mediaStreams[1], mediaStreams[0]];
 		} else {
 			this.swapped = false;
 		}
@@ -91,6 +98,19 @@ class VideoAreaFull {
 			user.onMediaUpdate = () => this.update(true);
 		}
 	}
+	captureFrame() {
+		return new Promise((res) => {
+			const canvas = document.createElement("canvas");
+			canvas.width = this.video.videoWidth;
+			canvas.height = this.video.videoHeight;
+			const ctx = canvas.getContext("2d");
+			ctx.drawImage(this.video, 0, 0);
+			canvas.toBlob(blob => {
+				if (!blob) return res(null);
+				res(new File([blob], "frame.jpg", {
+					type: "image/jpeg"
+				}));
+			}, "image/jpeg");
+		});
+	}
 }
-
-export default VideoAreaFull;

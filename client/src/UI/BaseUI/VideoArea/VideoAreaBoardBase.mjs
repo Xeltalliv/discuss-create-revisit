@@ -1,80 +1,52 @@
-class VideoAreaBoardBase {
-	constructor(main, baseUI, videoArea) {
-		const buttonsRow = document.createElement("div");
-		buttonsRow.classList.add("baseLeftFullButtonsRow");
+import { getMainInstance } from "../../../main.mjs";
+import { VideoAreaBase } from "./VideoAreaBase.mjs";
 
-		const statusBar = document.createElement("div");
-		statusBar.classList.add("baseLeftBoardStatusbar", "hidden");
-
+export class VideoAreaBoardBase extends VideoAreaBase {
+	constructor() {
+		super();
 		const miniVideo = document.createElement("video");
 		miniVideo.classList.add("baseLeftFullVideoMini");
 		miniVideo.autoplay = true;
-		this.miniVideo = miniVideo;
 
 		const miniEl = document.createElement("div");
 		miniEl.classList.add("baseLeftFullBGMini");
 		miniEl.append(miniVideo);
 
-		const el = document.createElement("div");
-		el.append(buttonsRow, miniEl, statusBar);
-		el.classList.add("baseLeftFullBG");
-		this.el = el;
+		this.el.append(miniEl);
+		this.el.classList.add("baseLeftFullBG");
 		this.miniEl = miniEl;
+		this.miniVideo = miniVideo;
 		this.hasMiniVideo = null;
-		this.main = main;
-		this.baseUI = baseUI;
-		this.statusBar = statusBar;
-		this.buttonsRow = buttonsRow;
 		this.user = null;
-		this.userId = 0;
 		this.board = null;
-		this.boardId = null;
 
 		this.addButton("Back", () => {
 			this.onExit();
-			videoArea.setUI(videoArea.gridUI);
+			const baseUI = getMainInstance().baseUI;
+			baseUI.topMain.setUI(baseUI.topMain.gridUI);
 			baseUI.userManager.updateUserList();
 		});
-		this.addButton(">", () => {
+		this.addButton("━▶", () => {
 			this.selectBoardByOffset(1);
 		});
-		this.addButton("<", () => {
+		this.addButton("◀━", () => {
 			this.selectBoardByOffset(-1);
 		});
-	}
-	onExit() {
-	}
-	addButton(label, fn) {
-		const button = document.createElement("button");
-		button.classList.add("baseLeftFullButton");
-		button.textContent = label;
-		button.addEventListener("click", fn);
-		this.buttonsRow.append(button);
-		return button;
 	}
 	selectBoardByOffset(offset) {
 		const boards = Array.from(this.user.boards.entries()).sort((a,b) => a[0]-b[0]);
 		for(let i=0; i<boards.length; i++) {
-			if (boards[i][0] == this.boardId) {
+			if (boards[i][1] == this.board) {
 				if (boards[i+offset]) {
-					this.baseUI.topMain.selectBoard(this.userId, boards[i+offset][0]);
+					getMainInstance().baseUI.topMain.selectBoard(this.user, boards[i+offset][1]);
 					return;
 				}
 			}
 		}
 	}
-	selectBoard(userId, boardId) {
-		this.userId = userId;
-		this.user = this.baseUI.userManager.get(userId);
-		this.boardId = boardId;
-		this.board = this.user.boards.get(boardId);
-	}
-	showStatusBar(text) {
-		this.statusBar.classList.remove("hidden");
-		this.statusBar.textContent = text;
-	}
-	hideStatusBar() {
-		this.statusBar.classList.add("hidden");
+	selectBoard(user, board) {
+		this.user = user;
+		this.board = board;
 	}
 	update(visible) {
 		const user = this.user;
@@ -101,5 +73,3 @@ class VideoAreaBoardBase {
 		}
 	}
 }
-
-export default VideoAreaBoardBase;

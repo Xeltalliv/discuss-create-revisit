@@ -1,49 +1,57 @@
-import RightBasePanel from "./RightBasePanel.mjs"
+import { RightBasePanel } from "./RightBasePanel.mjs";
+import { getMainInstance } from "../../../main.mjs";
 
-class RightUserlistPanel extends RightBasePanel {
-	constructor(main) {
-		super(main);
+export class RightUserlistPanel extends RightBasePanel {
+	constructor() {
+		super();
 		this.setTitle("User list");
 	}
 	getItemType() {
 		return UserElement;
 	}
-	setUsers(users) {
-		this.setContent(users);
+	setUsers(users, waitingUsers) {
+		const handRisen = [];
+		const normal = [];
+		for(const user of users) {
+			let bucket = normal;
+			if (user.handRaiseTime > 0) bucket = handRisen;
+			bucket.push(user);
+		}
+		handRisen.sort((a,b) => a.handRaiseTime-b.handRaiseTime);
+		normal.sort((a,b) => a.joinTime-b.joinTime);
+		waitingUsers.sort((a,b) => a.joinTime-b.joinTime);
+		this.setContent([...waitingUsers, ...handRisen, ...normal]);
 	}
 }
 
 class UserElement {
-	constructor(main, data) {
-		let name = data.name;
+	constructor(data) {
 		const nameSpan = document.createElement("span");
-		nameSpan.textContent = name;
-		nameSpan.addEventListener("click", () => {
-			this.toggleMenu();
-		});
+		nameSpan.textContent = data.name;
+		nameSpan.classList.add("usernameNameSpan");
+		nameSpan.addEventListener("click", this.toggleMenu.bind(this));
 
 		const nameContent = document.createElement("div");
 		const nameStatus = document.createElement("div");
-		//const banButton = document.createElement("button");
-		//const kickButton = document.createElement("button");
 		nameContent.append(nameSpan);
 		nameContent.classList.add("usernameNameContent");
 		nameStatus.classList.add("usernameNameStatus");
-		//banButton.textContent = "Block";
-		//banButton.addEventListener("click", );
-		//kickButton.textContent = "Kick";
-		//kickButton.addEventListener("click", );
 
 		const nameRow = document.createElement("div");
 		const buttonsRow = document.createElement("div");
 		nameRow.append(nameContent, nameStatus);
 		nameRow.classList.add("usernameNameRow");
-		//buttonsRow.append(banButton, kickButton);
 		buttonsRow.classList.add("usernameButtonsRow");
 
 		const el = document.createElement("div");
 		el.append(nameRow);
 		el.classList.add("usernameOuter");
+		el.addEventListener("mouseenter", () => {
+			this.toggleMenu(true);
+		});
+		el.addEventListener("mouseleave", () => {
+			this.toggleMenu(false);
+		});
 		
 		this.el = el;
 		this.buttonsShown = false;
@@ -51,27 +59,21 @@ class UserElement {
 		this.buttonsRow = buttonsRow;
 		this.nameContent = nameContent;
 		this.extras = [];
+		this.data = data;
 
-		this.addButton("Boards", function() {
-			main.baseUI.rightPanel.boardsUI.switchToUser(data);
-			main.baseUI.setRightUI("boards");
-		});
-		if (main.baseUI.userManager.me.isHost || main.baseUI.userManager.me.isYou) {
-			this.addButton("Rename", function() {
-				const name = prompt("Enter new name", main.baseUI.userManager.me.name);
-				if (!name) return;
-				main.networkManager.send("renameUser", {"userId": data.id, "newName": name});
-			});
-		}
-		if (main.baseUI.userManager.me.isHost) {
-			this.addButton("Block", function() {
-				if (!confirm(`Are you sure you want to ban "${data.name}"?`)) return;
-				main.networkManager.send("banUser", {"userId": data.id});
-			});
-			this.addButton("Kick", function() {
-				if (!confirm(`Are you sure you want to kick "${data.name}"?`)) return;
-				main.networkManager.send("kickUser", {"userId": data.id});
-			});
+		const me = getMainInstance().baseUI.userManager.me;
+		if (data.isWaiting) {
+			this.addButton("Accept", this.onAcceptPressed.bind(this));
+			this.addButton("Decline", this.onDeclinePressed.bind(this));
+		} else {
+			this.addButton("Boards", this.onBoardsPressed.bind(this));
+			if (me.isHost || me.isYou) {
+				this.addButton("Rename", this.onRenamePressed.bind(this));
+			}
+			if (me.isHost) {
+				this.addButton("Block", this.onBlockPressed.bind(this));
+				this.addButton("Kick", this.onKickPressed.bind(this));
+			}
 		}
 
 		const extras = [];
@@ -82,17 +84,47 @@ class UserElement {
 	}
 	addButton(label, fn) {
 		const button = document.createElement("button");
+		button.classList.add("usernameNameButton");
 		button.textContent = label;
 		button.addEventListener("click", fn);
 		this.buttonsRow.append(button);
 	}
-	toggleMenu() {
-		if (this.buttonsShown) {
-			this.buttonsShown = false;
-			this.buttonsRow.remove();
-		} else {
+	onBoardsPressed() {
+		const main = getMainInstance();
+		main.baseUI.rightPanel.boardsUI.switchToUser(this.data);
+		main.baseUI.rightPanel.setUIByName("boards");
+	}
+	onRenamePressed() {
+		const main = getMainInstance();
+		const name = prompt("Enter new name", main.baseUI.userManager.me.name);
+		if (!name) return;
+		main.networkManager.send("renameUser", {"userId": this.data.id, "newName": name});
+	}
+	onBlockPressed() {
+		const main = getMainInstance();
+		if (!confirm(`Are you sure you want to ban "${this.data.name}"?`)) return;
+		main.networkManager.send("banUser", {"userId": this.data.id});
+	}
+	onKickPressed() {
+		const main = getMainInstance();
+		if (!confirm(`Are you sure you want to kick "${this.data.name}"?`)) return;
+		main.networkManager.send("kickUser", {"userId": this.data.id});
+	}
+	onDeclinePressed() {
+		const main = getMainInstance();
+		main.networkManager.send("declineWaitingUser", {"userId": this.data.id});
+	}
+	onAcceptPressed() {
+		const main = getMainInstance();
+		main.networkManager.send("acceptWaitingUser", {"userId": this.data.id});
+	}
+	toggleMenu(state) {
+		if (state ?? !this.buttonsShown) {
 			this.buttonsShown = true;
 			this.el.append(this.buttonsRow);
+		} else {
+			this.buttonsShown = false;
+			this.buttonsRow.remove();
 		}
 	}
 	setExtras(extras) {
@@ -112,5 +144,3 @@ class UserElement {
 		this.nameStatus.textContent = status;
 	}
 }
-
-export default RightUserlistPanel;

@@ -1,7 +1,8 @@
 import Conference from "./Conference.mjs";
 import BoardTxt from "./BoardTxt.mjs";
 import BoardImg from "./BoardImg.mjs";
-import { generateMiniUUID } from "./Utils.mjs";
+import BoardFolder from "./BoardFolder.mjs";
+import { generateMiniUUID, generateUserId, generateRandomUserId } from "./Utils.mjs";
 import { apply } from "./TextDiff.mjs";
 
 class User {
@@ -13,6 +14,7 @@ class User {
 		this.conference = null;
 		this.name = "";
 		this.userId = null;
+		this.userType = "guest";
 		this.id = null;
 		this.joinTime = 0;
 		this.handRaiseTime = 0;
@@ -20,6 +22,8 @@ class User {
 		this.boards = new Map();
 		this.nextBoardId = 0;
 		this.editsBoard = null;
+		this.state = "nothing";
+		this.confToken = null;
 		this.lastLine = {
 			userId: null,
 			boardId: null,
@@ -50,13 +54,39 @@ class User {
 		}
 
 		if (op == "userToken") {
-			let decoded = this.main.validator.check(data, 3, "U");
+			let decoded = this.main.validator.check(data, 4, "U");
 			if (decoded) {
-				this.userId = decoded[1];
+				this.userType = decoded[1];
+				this.userId = decoded[2];
 			} else {
-				this.userId = generateMiniUUID();
-				this.send("setUserToken", this.main.validator.sign("U."+this.userId));
+				this.userType = "guest";
+				this.userId = generateRandomUserId();
+				this.send("setUserTokenGuest", this.main.validator.sign("U.guest."+this.userId));
 			}
+		}
+		if (op == "googleSignIn") {
+			if (typeof data.idToken !== "string") {
+				this.send("signinError", "invalid idToken", replyId);
+				return;
+			}
+			// TODO: replace with offline check using google's public keys, as recommended in docs
+			const res = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token="+data.idToken);
+			const payload = await res.json();
+			const expected = {
+				"aud": this.main.config.auth.google.clientId,
+				"azp": this.main.config.auth.google.clientId,
+				"iss": "https://accounts.google.com",
+				"nonce": data.nonce,
+			};
+			for(let key in expected) {
+				if (payload[key] !== expected[key]) {
+					this.send("signinError", "invalid "+key, replyId);
+					return;
+				}
+			}
+			this.userId = generateUserId("google"+payload.sub);
+			this.userType == "google";
+			this.send("setUserTokenOAuth", this.main.validator.sign("U.google."+this.userId));
 		}
 		if (op == "test") {
 			this.send("success");
@@ -90,28 +120,52 @@ class User {
 					return;
 				}
 				conference = new Conference(this.main, data.confToken);
-				this.main.conferences.set(data.confToken, conference);
+			}
+			if (conference.settings.requireSignin && this.userType == "guest") {
+				this.send("error", "This conference requires signin", replyId);
+				return;
 			}
 			if (conference.isBanned(this.userId)) {
 				this.send("error", "banned", replyId);
 				return;
 			}
-			this.send("confJoin", {"confToken": data.confToken}, replyId);
-			this.name = data.name;
-			this.joinTime = Date.now();
-			this.isHost = decoded[2] == this.userId;
-			conference.addUser(this);
+			if (conference.settings.joinMode == "open") {
+				this.send("confJoin", {"confToken": data.confToken}, replyId);
+				this.confToken = data.confToken;
+				this.name = data.name;
+				this.isHost = decoded[2] == this.userId;
+				this.conference = conference;
+				this.joinTime = Date.now();
+				this.state = "joined";
+				conference.addUser(this);
+			} else if (conference.settings.joinMode == "invite") {
+				this.send("confWait", {"confToken": data.confToken}, replyId);
+				this.confToken = data.confToken;
+				this.name = data.name;
+				this.isHost = decoded[2] == this.userId;
+				this.conference = conference;
+				this.joinTime = Date.now();
+				this.state = "waiting";
+				conference.addWaitingUser(this);
+			} else {
+				this.send("error", "Conference is closed from joining", replyId);
+				return;
+			}
 		}
 		if (op == "confCreate") {
 			const confId = generateMiniUUID();
 			const confToken = this.main.validator.sign("C."+confId+"."+this.userId);
 			this.send("confCreate", {"confToken": confToken}, replyId);
 		}
+		if (this.state !== "joined") return;
 		const conference = this.conference;
-		if (!conference) return;
+
 		if (op == "chat") {
 			//data.text = Array.from(conference.users.values()).map(u => `${u.id}: pTr: ${u.producerTransport ? u.producerTransport.id : null} cTr: ${JSON.stringify(Object.fromEntries(Array.from(u.consumerTransports.entries()).map(e => [e[0], e[1].id])))}`).join("\n")
-			conference.sendToEveryone("chat", {"author":this.id, "text":data.text.toString()});
+			conference.sendToEveryone("chat", {"authorId":this.id, "text":data.text.toString(), "files":data.files});
+		}
+		if (op == "conferenceSettings" && this.isHost) {
+			conference.setSettings(data);
 		}
 		if (op == "raiseHand") {
 			const time = this.handRaiseTime == 0 ? Date.now() : 0;
@@ -123,6 +177,15 @@ class User {
 		}
 		if (op == "kickUser" && this.isHost) {
 			conference.kickUser(data.userId);
+		}
+		if (op == "declineWaitingUser" && this.isHost) {
+			conference.kickWaitingUser(data.userId);
+		}
+		if (op == "acceptWaitingUser" && this.isHost) {
+			conference.acceptWaitingUser(data.userId);
+		}
+		if (op == "endConf" && this.isHost) {
+			conference.destroy();
 		}
 		if (op == "renameUser" && (this.isYou || this.isHost)) {
 			conference.renameUser(data.userId, data.newName);
@@ -138,6 +201,8 @@ class User {
 			}
 			if (type == "txt") board = new BoardTxt(id, this.id, data);
 			if (type == "img") board = new BoardImg(id, this.id, data);
+			if (type == "folder") board = new BoardFolder(id, this.id, data);
+			if (!board) return;
 			if (data.type == "copy") {
 				board.copyFrom(orig);
 			}
@@ -150,6 +215,9 @@ class User {
 		}
 		if (op == "deleteBoard") {
 			conference.deleteBoard(data.userId, data.boardId);
+		}
+		if (op == "moveBoards") {
+			conference.moveBoards(data.userId, data.boardIds, data.folderId);
 		}
 		if (op == "editsBoard") {
 			this.editsBoard = data;
@@ -164,6 +232,9 @@ class User {
 		if (op == "txtBoardApplyTransform") {
 			conference.txtBoardApplyTransform(data.userId, data.boardId, data.transform, this);
 		}
+		if (op == "txtBoardSetDisplayMode") {
+			conference.txtBoardSetDisplayMode(data.userId, data.boardId, data.displayMode, this);
+		}
 		if (op == "imgBoardNewLine") {
 			conference.imgBoardNewLine(data.userId, data.boardId, data, this, replyId);
 		}
@@ -172,12 +243,12 @@ class User {
 		}
 		if (op == "points") {
 			this.lastLine.line.addPoints(data);
-			conference.sendToEveryoneExcept("points", {
+			conference.sendToEveryone("points", {
 				"userId": this.lastLine.userId,
 				"boardId": this.lastLine.boardId,
 				"lineId": this.lastLine.line.id,
 				"points": data
-			}, this);
+			});
 		}
 
 
@@ -256,7 +327,9 @@ class User {
 			});
 		}
 		if (op == "closeProducer") {
-			this.producers.get(data).close();
+			const producer = this.producers.get(data);
+			if (!producer) return; // Could've closed on it's own before client realised that
+			producer.close();
 		}
 		if (op == "closeProducerTransport") {
 			//console.log("producer transport closed");
@@ -305,8 +378,13 @@ class User {
 			consumer.resume();
 		}
 	}
+	acceptWaiting() {
+		this.send("confJoin", {"confToken": this.confToken});
+		this.state = "joined";
+		this.conference.addUser(this);
+	}
 	disconnect() {
-		if (this.conference) {
+		if (this.state == "joined") {
 			this.conference.removeUserById(this.id);
 			for(let [_id, consumer] of this.consumers) {
 				consumer.close();
@@ -319,6 +397,16 @@ class User {
 				consumerTransport.close();
 			}
 		}
+		if (this.state == "waiting") {
+			this.conference.removeWaitingUserById(this.id);
+		}
+	}
+	invalidateDeadObjects() {
+		this.producers.clear();
+		this.consumers.clear();
+		this.producerTransport = null;
+		this.consumerTransports.clear();
+		this.state = "dead";
 	}
 	send(op, json={}, reply) {
 		const all = {
@@ -355,6 +443,14 @@ class User {
 		this.boards.delete(boardId);
 		this.conference.sendToEveryone("deleteBoard", {"userId":this.id, "boardId":boardId});
 	}
+	moveBoards(boardIds, folderId) {
+		for(const boardId of boardIds) {
+			const board = this.boards.get(boardId);
+			if (!board) continue;
+			board.folderId = folderId;
+		}
+		this.conference.sendToEveryone("moveBoards", {"userId":this.id, "boardIds":boardIds, "folderId":folderId});
+	}
 	getBoard(boardId) {
 		return this.boards.get(boardId);
 	}
@@ -377,17 +473,22 @@ class User {
 		board.timeout(this.conference);
 		board.data = apply(board.data, transform);
 		this.conference.sendToEveryoneExcept("txtBoardApplyTransform", {"userId":this.id, "boardId":boardId, "transform":transform}, sender);
-		console.log(board.data.join("\n"));
+	}
+	txtBoardSetDisplayMode(boardId, displayMode, sender) {
+		const board = this.boards.get(boardId);
+		if (!board) return;
+		board.displayMode = displayMode;
+		this.conference.sendToEveryoneExcept("txtBoardSetDisplayMode", {"userId":this.id, "boardId":boardId, "displayMode":displayMode}, sender);
 	}
 	imgBoardNewLine(boardId, data, requester, replyId) {
 		const board = this.boards.get(boardId);
 		if (!board) return;
 		const line = board.createLine(data);
-		requester.send("lineId", line.id, replyId);
 		requester.lastLine.line = line;
 		requester.lastLine.userId = this.id;
 		requester.lastLine.boardId = boardId;
-		this.conference.sendToEveryoneExcept("imgBoardNewLine", {"userId":this.id, "boardId":boardId, ...line.getCreationData()}, requester);
+		this.conference.sendToEveryone("imgBoardNewLine", {"userId":this.id, "boardId":boardId, ...line.getCreationData()});
+		requester.send("lineId", line.id, replyId);
 	}
 	imgBoardDeleteLine(boardId, lineId) {
 		const board = this.boards.get(boardId);
@@ -396,7 +497,6 @@ class User {
 		if (deleted) this.conference.sendToEveryone("imgBoardDeleteLine", {"userId":this.id, "boardId":boardId, "lineId":lineId});
 	}
 	getJoinInfo(user) {
-		//console.log(this.producers);
 		return {
 			id: this.id,
 			name: this.name,
@@ -412,6 +512,13 @@ class User {
 				screenshareAudio: this.producerIds.screenshareAudio,
 			},
 			boards: Array.from(this.boards.entries()).sort((a,b)=>a[0]-b[0]).map(e=>e[1].getPublicData())
+		};
+	}
+	getWaitInfo() {
+		return {
+			id: this.id,
+			name: this.name,
+			joinTime: this.joinTime,
 		};
 	}
 	closeConsumerTransport(id) {

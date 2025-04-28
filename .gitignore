@@ -1,4 +1,6 @@
 client/node_modules
-client/src/libs
+client/libs
 server/node_modules
 server/ssl
+server/static
+server/config.json

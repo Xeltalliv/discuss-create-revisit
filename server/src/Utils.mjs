@@ -1,4 +1,5 @@
 import os from "node:os";
+import crypto from "node:crypto";
 
 function getLocalIp() {
 	const interfaces = os.networkInterfaces();
@@ -34,4 +35,12 @@ function generateMiniUUID() {
 	return part;
 }
 
-export {getLocalIp, generateUUID, generateMiniUUID};
+function generateRandomUserId() {
+	return generateUserId(generateUUID());
+}
+
+function generateUserId(string) {
+	return crypto.createHash("sha256").update(string).digest("hex").substring(32);
+}
+
+export {getLocalIp, generateUUID, generateMiniUUID, generateUserId, generateRandomUserId};

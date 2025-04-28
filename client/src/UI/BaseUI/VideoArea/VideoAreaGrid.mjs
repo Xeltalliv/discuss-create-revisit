@@ -1,28 +1,29 @@
+import { getMainInstance } from "../../../main.mjs";
+import { VideoAreaBase } from "./VideoAreaBase.mjs";
+
 const USERS_PER_PAGE = 9;
 
-class VideoAreaGrid {
-	constructor(main, baseUI, videoArea) {
+export class VideoAreaGrid extends VideoAreaBase {
+	constructor() {
+		super();
 		const minis = [];
 		const grid = document.createElement("div");
 		grid.classList.add("baseLeftGrid");
 		for(let i=0; i<USERS_PER_PAGE; i++) {
-			const mini = new VideoAreaGridMiniature(baseUI, videoArea);
+			const mini = new VideoAreaGridMiniature();
 			minis.push(mini);
 			grid.append(mini.el);
 		}
 		const panel = document.createElement("div");
 		panel.classList.add("baseLeftGridPanel");
 
-		const el = document.createElement("div");
-		el.append(grid, panel);
-		el.classList.add("baseLeftMain");
-		this.el = el;
+		this.el.append(grid, panel);
+		this.el.classList.add("baseLeftMain");
 		this.offset = 0;
 		this.minis = minis;
 		this.grid = grid;
 		this.panel = panel;
 		this.gridPages = [];
-		this.baseUI = baseUI;
 	}
 	setUsers(users, visible) {
 		if (!visible) {
@@ -57,7 +58,7 @@ class VideoAreaGrid {
 			page.textContent = pages.length + 1;
 			page.addEventListener("click", () => {
 				this.offset = offset;
-				this.baseUI.userManager.updateUserList();
+				getMainInstance().baseUI.userManager.updateUserList();
 			});
 			pages.push(page);
 			this.panel.append(page);
@@ -65,18 +66,18 @@ class VideoAreaGrid {
 		while(pages.length > desiredPageCount) {
 			pages.pop().remove();
 		}
+		this.panel.classList.toggle("hidden", desiredPageCount < 2);
 	}
 }
 
 class VideoAreaGridMiniature {
-	constructor(baseUI, videoArea) {
+	constructor() {
 		const video = document.createElement("video");
 		video.classList.add("baseLeftGridVideo");
 		video.autoplay = true;
 		this.video = video;
 
 		const name = document.createElement("span");
-		name.textContent = "AAA";
 		name.classList.add("baseLeftGridName");
 		this.name = name;
 
@@ -84,24 +85,27 @@ class VideoAreaGridMiniature {
 		boardIcon.classList.add("txtBoardIcon", "boardIconGrid");
 		boardIcon.addEventListener("click", (event) => {
 			event.stopPropagation();
-			const edits = baseUI.userManager.get(this.userId).editsBoard;
+			const userManager = getMainInstance().baseUI.userManager;
+			const edits = this.user.editsBoard;
 			if (!edits) return;
-			baseUI.selectBoard(edits.userId, edits.boardId);
+			const user = userManager.get(edits.userId);
+			const board = user.boards.get(edits.boardId);
+			getMainInstance().baseUI.topMain.selectBoard(user, board);
 		});
 
 		const el = document.createElement("div");
 		el.append(video, name, boardIcon);
 		el.classList.add("baseLeftGridBG", "hidden");
 		el.addEventListener("click", () => {
-			videoArea.fullUI.selectUser(this.userId);
-			videoArea.setUI(videoArea.fullUI);
-			baseUI.userManager.updateUserList();
+			const topMain = getMainInstance().baseUI.topMain;
+			topMain.fullUI.selectUser(this.user);
+			topMain.setUI(topMain.fullUI);
+			getMainInstance().baseUI.userManager.updateUserList();
 		});
 		this.el = el;
 		this.boardIcon = boardIcon;
 		this.hasVideo = null;
-		this.userId = 0;
-		this.baseUI = baseUI;
+		this.user = null;
 	}
 	hide() {
 		this.el.classList.add("hidden");
@@ -114,16 +118,16 @@ class VideoAreaGridMiniature {
 		this.el.classList.remove("hidden");
 	}
 	update(user) {
-		this.userId = user.id;
+		this.user = user;
 		let name = user.name;
 		if (user.handRaiseTime > 0) name += " ✋";
 		this.name.textContent = name;
 
 		const eb = user.editsBoard;
 		if (eb) {
-			const boardType = this.baseUI.userManager.get(eb.userId).getBoardType(eb.boardId);
+			const boardType = getMainInstance().baseUI.userManager.get(eb.userId).getBoardType(eb.boardId);
 			this.boardIcon.classList.remove("txtBoardIcon", "imgBoardIcon");
-			this.boardIcon.classList.add("txtBoardIcon", `${boardType}BoardIcon`);
+			this.boardIcon.classList.add(`${boardType}BoardIcon`);
 			this.el.append(this.boardIcon);
 		} else {
 			this.boardIcon.remove();
@@ -138,5 +142,3 @@ class VideoAreaGridMiniature {
 		}
 	}
 }
-
-export default VideoAreaGrid;

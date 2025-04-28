@@ -1,18 +1,23 @@
 {
   "dependencies": {
-    "mediasoup-client": "^3.7.1"
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "dompurify": "^3.2.6",
+    "jest": "^29.7.0",
+    "marked": "^15.0.12",
+    "mediasoup-client": "^3.11.0",
+    "rollup": "^4.41.1",
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.28.0",
+    "globals": "^16.2.0"
   },
   "scripts": {
-    "build": "rollup --config rollup/rollup.config.mediasoup.js",
-    "devserver": "python dev-server.py"
+    "build": "node scripts/main.mjs",
+    "buildmediasoup": "npx rollup --config scripts/rollup.config.mediasoup.js",
+    "buildmarked": "npx rollup --config scripts/rollup.config.marked.js",
+    "devserver": "python3 dev-server.py",
+    "lint": "eslint src --ext .mjs",
+    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" npx jest"
   },
-  "type": "module",
-  "devDependencies": {
-    "eslint": "^8.56.0",
-    "rollup": "^4.9.1",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-node-builtins": "^2.1.2",
-    "rollup-plugin-node-globals": "^1.4.0",
-    "rollup-plugin-node-resolve": "^5.2.0"
-  }
+  "type": "module"
 }

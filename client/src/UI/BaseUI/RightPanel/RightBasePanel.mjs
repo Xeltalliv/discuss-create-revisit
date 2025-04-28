@@ -1,5 +1,5 @@
-class RightBasePanel {
-	constructor(main) {
+export class RightBasePanel {
+	constructor() {
 		const title = document.createElement("h2");
 		title.classList.add("baseRightTitle");
 		const listEl = document.createElement("div");
@@ -12,7 +12,6 @@ class RightBasePanel {
 		this.listEl = listEl;
 		this.title = title;
 		this.items = [];
-		this.main = main;
 	}
 	setContent(data) {
 		for(let item of this.items) {
@@ -20,7 +19,7 @@ class RightBasePanel {
 		}
 		const type = this.getItemType();
 		for(let dataItem of data) {
-			const item = new type(this.main, dataItem);
+			const item = new type(dataItem);
 			this.listEl.append(item.el);
 			this.items.push(item);
 		}
@@ -28,7 +27,7 @@ class RightBasePanel {
 	addContent(data) {
 		const type = this.getItemType();
 		for(let dataItem of data) {
-			const item = new type(this.main, dataItem);
+			const item = new type(dataItem);
 			this.listEl.append(item.el);
 			this.items.push(item);
 		}
@@ -40,5 +39,3 @@ class RightBasePanel {
 		throw new Error("RightBasePanel is a base class and doesn't have an item type");
 	}
 }
-
-export default RightBasePanel;
