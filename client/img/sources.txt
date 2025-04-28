@@ -1,0 +1,28 @@
+
+Google logo:
+  https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg
+
+bottom/microphone.svg
+  by Catalin Fertu
+  CC Attribution License
+  https://www.svgrepo.com/svg/522179/microphone
+
+bottom/camera.svg
+  by Catalin Fertu
+  CC Attribution License
+  https://www.svgrepo.com/svg/522015/camera
+
+chat/attachment.svg
+  by Esri
+  MIT License
+  https://www.svgrepo.com/svg/450639/attachment-plus
+
+https://www.svgrepo.com/svg/510893/chat-conversation
+
+https://www.svgrepo.com/svg/507443/users
+https://www.svgrepo.com/svg/374867/end-call
+https://www.svgrepo.com/svg/39759/overlapping-round-cornered-rectangles
+https://www.svgrepo.com/svg/389390/screen-share?edit=true
+https://www.svgrepo.com/svg/501352/settings
+https://www.svgrepo.com/svg/326662/hand-right-outline
+https://www.svgrepo.com/svg/510893/chat-conversation

@@ -1,19 +1,30 @@
-import RightUserlistPanel from "./RightPanel/RightUserlistPanel.mjs";
-import RightChatPanel from "./RightPanel/RightChatPanel.mjs";
-import RightBoardsPanel from "./RightPanel/RightBoardsPanel.mjs";
-import RightDrawPanel from "./RightPanel/RightDrawPanel.mjs";
+import { RightUserlistPanel } from "./RightPanel/RightUserlistPanel.mjs";
+import { RightChatPanel } from "./RightPanel/RightChatPanel.mjs";
+import { RightBoardsPanel } from "./RightPanel/RightBoardsPanel.mjs";
+import { RightDrawPanel } from "./RightPanel/RightDrawPanel.mjs";
+import { RightWritePanel } from "./RightPanel/RightWritePanel.mjs";
+import { RightSettingsPanel } from "./RightPanel/RightSettingsPanel.mjs";
+import { RightHistoryPanel } from "./RightPanel/RightHistoryPanel.mjs";
+import { getMainInstance } from "../../main.mjs";
 
-class RightPanel {
-	constructor(main, baseUI) {
+export class RightPanel {
+	constructor() {
 		const el = document.createElement("div");
 		el.classList.add("baseTopRight");
 		this.el = el;
 
 		this.selectedUI = null;
-		this.userlistUI = new RightUserlistPanel(main, baseUI);
-		this.chatUI = new RightChatPanel(main, baseUI);
-		this.boardsUI = new RightBoardsPanel(main, baseUI);
-		this.drawUI = new RightDrawPanel(main, baseUI);
+		this.userlistUI = new RightUserlistPanel();
+		this.chatUI = new RightChatPanel();
+		this.boardsUI = new RightBoardsPanel();
+		this.drawUI = new RightDrawPanel();
+		this.writeUI = new RightWritePanel();
+		this.settingsUI = new RightSettingsPanel();
+		this.historyUI = new RightHistoryPanel();
+	}
+	init() {
+		this.chatUI.init();
+		this.settingsUI.init();
 	}
 	setUI(ui) {
 		if (this.selectedUI) this.selectedUI.el.remove();
@@ -31,17 +42,16 @@ class RightPanel {
 			"userlist": this.userlistUI,
 			"boards": this.boardsUI,
 			"draw": this.drawUI,
-		}
+			"write": this.writeUI,
+			"settings": this.settingsUI,
+			"history": this.historyUI,
+		};
 		const ui = lookup[name];
 		if (ui == this.selectedUI && !force) this.setUI(null);
 		else this.setUI(ui);
-	}
-	getDrawOptions() {
-		return this.drawUI.getDrawOptions();
+		getMainInstance().baseUI.timer.reset();
 	}
 	resetChat() {
 		this.chatUI.setContent([]);
 	}
 }
-
-export default RightPanel;

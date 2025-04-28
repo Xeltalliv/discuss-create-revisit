@@ -1,12 +1,15 @@
 {
 	"http": {
+		"enabled": true,
 		"port": 8080
 	},
 	"https": {
+		"enabled": true,
 		"port": 8443,
-		"key": "ssl/key.pem",
-		"cert": "ssl/cert.pem"
+		"key": "ssl/dcr.vvv.kyiv.ua.key",
+		"cert": "ssl/fullchain.cer"
 	},
-	"multithreading": true,
+	"disableCors": true,
+	"workers": "auto",
 	"secret": "change this to a long and secure passowrd"
 }

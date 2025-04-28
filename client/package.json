@@ -1,15 +1,19 @@
 {
   "dependencies": {
+    "dompurify": "^3.2.5",
+    "marked": "^15.0.11",
     "mediasoup-client": "^3.7.1"
   },
   "scripts": {
-    "build": "rollup --config rollup/rollup.config.mediasoup.js",
-    "devserver": "python dev-server.py"
+    "build": "node scripts/main.mjs",
+    "buildmediasoup": "rollup --config scripts/rollup.config.mediasoup.js",
+    "buildmarked": "rollup --config scripts/rollup.config.marked.js",
+    "devserver": "python3 dev-server.py"
   },
   "type": "module",
   "devDependencies": {
     "eslint": "^8.56.0",
-    "rollup": "^4.9.1",
+    "rollup": "^4.40.2",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-globals": "^1.4.0",

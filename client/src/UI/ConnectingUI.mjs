@@ -1,4 +1,4 @@
-class ConnectingUI {
+export class ConnectingUI {
 	constructor() {
 		const title = document.createElement("h1");
 		title.textContent = "Connecting";
@@ -15,5 +15,3 @@ class ConnectingUI {
 		this.el = el;
 	}
 }
-
-export default ConnectingUI;

@@ -3,7 +3,7 @@ class Line {
 		this.id = id;
 		this.color = data.color;
 		this.size = data.size;
-		this.points = [];
+		this.points = data.points ?? [];
 	}
 	getCreationData() {
 		return {

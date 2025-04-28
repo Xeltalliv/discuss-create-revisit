@@ -1,15 +1,11 @@
-import VideoAreaBoardBase from "./VideoAreaBoardBase.mjs";
-import Line from "../../../Data/Board/Line.mjs"
+import { VideoAreaBoardBase } from "./VideoAreaBoardBase.mjs";
+import { Line } from "../../../Data/Boards.mjs";
+import { getMainInstance } from "../../../main.mjs";
 
-const CANVAS_WIDTH = 1600;
-const CANVAS_HEIGHT = 900;
-
-class VideoAreaBoardImg extends VideoAreaBoardBase {
-	constructor(main, baseUI, videoArea) {
-		super(main, baseUI, videoArea);
+export class VideoAreaBoardImg extends VideoAreaBoardBase {
+	constructor() {
+		super();
 		const canvas = document.createElement("canvas");
-		canvas.width = CANVAS_WIDTH;
-		canvas.height = CANVAS_HEIGHT;
 		canvas.classList.add("baseLeftBoardCanvas");
 		this.el.insertBefore(canvas, this.el.firstChild);
 		this.canvas = canvas;
@@ -18,14 +14,13 @@ class VideoAreaBoardImg extends VideoAreaBoardBase {
 		this.ctx = ctx;
 		ctx.lineCap = "round";
 
-		const nm = main.networkManager;
 		let line = null;
 		let interval = null;
 		let eraseSize = 0;
 		const mouseMove = () => {
 			const rect = canvas.getBoundingClientRect();
-			const x = Math.round((event.clientX - rect.left) / rect.width * CANVAS_WIDTH);
-			const y = Math.round((event.clientY - rect.top) / rect.height * CANVAS_HEIGHT);
+			const x = Math.round((event.clientX - rect.left) / rect.width * canvas.width);
+			const y = Math.round((event.clientY - rect.top) / rect.height * canvas.height);
 			line.addPoint(ctx, x, y);
 		};
 		const mouseUp = () => {
@@ -33,41 +28,42 @@ class VideoAreaBoardImg extends VideoAreaBoardBase {
 			document.body.removeEventListener("mouseup", mouseUp);
 			clearInterval(interval);
 			sendPoints();
-		}
+		};
 		const mouseMoveErase = () => {
 			const rect = canvas.getBoundingClientRect();
-			const x = Math.round((event.clientX - rect.left) / rect.width * CANVAS_WIDTH);
-			const y = Math.round((event.clientY - rect.top) / rect.height * CANVAS_HEIGHT);
+			const x = Math.round((event.clientX - rect.left) / rect.width * canvas.width);
+			const y = Math.round((event.clientY - rect.top) / rect.height * canvas.height);
 			this.deleteLines(x, y, eraseSize);
 		};
 		const mouseUpErase = () => {
 			document.body.removeEventListener("mousemove", mouseMoveErase);
 			document.body.removeEventListener("mouseup", mouseUpErase);
-		}
+		};
 
 		const sendPoints = () => {
 			const points = line.getPointsData();
-			if (points.length > 0) nm.send("points", points);
-		}
+			if (points.length > 0) getMainInstance().networkManager.send("points", points);
+		};
 		const confirmLine = async (line) => {
 			this.board.unconfirmedData.add(line);
-			const id = await nm.sendAndWaitForReply("imgBoardNewLine", {
-				userId: this.userId,
-				boardId: this.boardId,
+			const id = await getMainInstance().networkManager.sendAndWaitForReply("imgBoardNewLine", {
+				userId: this.user.id,
+				boardId: this.board.id,
 				...line.getCreationData()
 			});
 			this.board.unconfirmedData.delete(line);
 			if (id.op == "error") return;
-			line.id = id.data;
-			this.board.data.set(id.data, line);
-		}
+			//line.id = id.data;
+			//this.board.addLineFromWS(id, line);
+			//this.board.data.set(id.data, line);
+		};
 		canvas.addEventListener("mousedown", (event) => {
-			if (!this.editMode) return;
+			if (this.mode != "edit") return;
 			event.preventDefault();
 			const rect = canvas.getBoundingClientRect();
-			const x = Math.round((event.clientX - rect.left) / rect.width * CANVAS_WIDTH);
-			const y = Math.round((event.clientY - rect.top) / rect.height * CANVAS_HEIGHT);
-			const drawOptions = baseUI.getDrawOptions();
+			const x = Math.round((event.clientX - rect.left) / rect.width * canvas.width);
+			const y = Math.round((event.clientY - rect.top) / rect.height * canvas.height);
+			const drawOptions = getMainInstance().baseUI.rightPanel.drawUI.getDrawOptions();
 			if (drawOptions.mode == "draw") {
 				line = new Line(drawOptions);
 				line.addPoints([x, y]);
@@ -82,34 +78,57 @@ class VideoAreaBoardImg extends VideoAreaBoardBase {
 			}
 		});
 		
-		this.addButton("Edit mode", () => {
+		this.editModeButton = this.addButton("Edit mode", () => {
+			const baseUI = getMainInstance().baseUI;
 			if (baseUI.rightPanel.selectedUI == baseUI.rightPanel.drawUI) {
-				this.editMode = false;
-				baseUI.setRightUI("boards");
-				videoArea.resetEditBoard();
+				this.setMode("view");
+				baseUI.rightPanel.setUIByName("boards");
+				baseUI.topMain.resetEditBoard();
 			} else {
-				this.editMode = true;
-				baseUI.setRightUI("draw");
-				videoArea.setEditBoard(this.userId, this.boardId);
+				this.setMode("edit");
+				baseUI.rightPanel.setUIByName("draw");
+				baseUI.topMain.setEditBoard(this.user, this.board);
 			}
 		});
-		this.editMode = false;
+		this.historyModeButton = this.addButton("History mode", () => {
+			const baseUI = getMainInstance().baseUI;
+			if (baseUI.rightPanel.selectedUI == baseUI.rightPanel.historyUI) {
+				this.setMode("view");
+				baseUI.rightPanel.setUIByName("boards");
+				baseUI.topMain.resetEditBoard();
+			} else {
+				this.setMode("history");
+				baseUI.rightPanel.setUIByName("history");
+				baseUI.topMain.resetEditBoard();
+			}
+		});
+		this.mode = "";
+		this.setMode("view");
+	}
+	setMode(mode) {
+		this.mode = mode;
+		if (this.board) this.board.goToNow();
+		this.updateImage();
+		this.editModeButton.classList.toggle("baseLeftFullButtonActive", this.mode == "edit");
+		this.historyModeButton.classList.toggle("baseLeftFullButtonActive", this.mode == "history");
 	}
 	onExit() {
-		if (this.baseUI.rightPanel.selectedUI == this.baseUI.rightPanel.drawUI) {
-			this.baseUI.setRightUI("boards");
+		const baseUI = getMainInstance().baseUI;
+		if (baseUI.rightPanel.selectedUI == baseUI.rightPanel.drawUI ||
+			baseUI.rightPanel.selectedUI == baseUI.rightPanel.historyUI) {
+			baseUI.rightPanel.setUIByName("boards");
 		}
-		this.editMode = false;
+		this.setMode("view");
 	}
 	deleteLines(x, y, size) {
-		const nm = this.main.networkManager;
+		const nm = getMainInstance().networkManager;
 		let erased = false;
 		for(let [id,line] of this.board.data) {
 			if (line.touches(x, y, size)) {
-				this.board.data.delete(id);
+				this.board.deleteLinePredicted(id);
 				nm.send("imgBoardDeleteLine", {
-					userId: this.userId,
-					boardId: this.boardId,
+					userId: this.user.id,
+					boardId: this.board.id,
 					lineId: id
 				});
 				erased = true;
@@ -117,18 +136,25 @@ class VideoAreaBoardImg extends VideoAreaBoardBase {
 		}
 		if (erased) this.updateImage();
 	}
-	selectBoard(userId, boardId) {
-		super.selectBoard(userId, boardId);
-		this.editMode = false;
+	selectBoard(user, board) {
+		super.selectBoard(user, board);
+		this.setMode("view");
 		this.updateImage();
+		getMainInstance().baseUI.rightPanel.historyUI.selectBoard(this.user, this.board);
 	}
 	updateImage() {
+		if (this.board == null) return;
 		const canvas = this.canvas;
+		if (this.board.width !== canvas.width || this.board.height !== canvas.height) {
+			canvas.width = this.board.width;
+			canvas.height = this.board.height;
+		}
 		const ctx = this.ctx;
 		ctx.fillStyle = "#ffffff";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		this.board.drawBackgroundImage(ctx, this.updateImage.bind(this));
 		const lines = Array.from(this.board.data.entries()).sort((a,b) => a[0]-b[0]);
-		for(let [id,line] of lines) {
+		for(let [_id,line] of lines) {
 			line.draw(ctx);
 		}
 		for(let line of this.board.unconfirmedData) {
@@ -136,5 +162,3 @@ class VideoAreaBoardImg extends VideoAreaBoardBase {
 		}
 	}
 }
-
-export default VideoAreaBoardImg;

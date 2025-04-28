@@ -3,6 +3,9 @@
     "start": "src/main.mjs"
   },
   "dependencies": {
+    "busboy": "^1.6.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "mediasoup": "^3.13.11",
     "ws": "^8.15.1"
   },

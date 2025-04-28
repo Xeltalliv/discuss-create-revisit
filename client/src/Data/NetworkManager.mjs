@@ -1,7 +1,7 @@
-class NetworkManager {
-	constructor(main) {
-		this.main = main;
-		this.userToken = null;
+import { getMainInstance } from "../main.mjs";
+
+export class NetworkManager {
+	constructor() {
 		this.ws = null;
 		this.wsid = 0;
 		this.replyHandlers = new Map();
@@ -14,29 +14,26 @@ class NetworkManager {
 		this.setupWebsocket(ui);
 	}
 	setupWebsocket(ui) {
-		this.main.disconnectUI.resetReason();
-		this.userToken = localStorage.getItem("userToken");
-		this.ws = new WebSocket(`ws://${location.hostname}:8080`);
-		this.ws.addEventListener("open", () => {
-			this.send("userToken", this.userToken ?? null);
-			if (ui) this.main.setUI(ui);
-		});
-		this.ws.addEventListener("error", () => {
-			this.main.setUI(this.main.disconnectUI);
-			this.main.baseUI.mediasoup.clear();
-		});
-		this.ws.addEventListener("close", () => {
-			this.main.setUI(this.main.disconnectUI);
-			this.main.baseUI.mediasoup.clear();
-		});
-		this.ws.addEventListener("message", this.handle.bind(this));
-		this.addHandler("userTokens", (op, data) => {
-			if (op == "setUserToken") {
-				localStorage.setItem("userToken", data);
-			}
-		});
+		const main = getMainInstance();
+		this.uiAfterConnect = ui;
+		main.disconnectUI.resetReason();
+		this.ws = new WebSocket(`${main.wsProtocol}//${main.host}`);
+		this.ws.addEventListener("open", this.onOpen.bind(this));
+		this.ws.addEventListener("error", this.onClose.bind(this));
+		this.ws.addEventListener("close", this.onClose.bind(this));
+		this.ws.addEventListener("message", this.onMessage.bind(this));
 	}
-	handle(message) {
+	onOpen() {
+		const main = getMainInstance();
+		main.auth.onConnect();
+		if (this.uiAfterConnect) main.setUI(this.uiAfterConnect);
+	}
+	onClose() {
+		const main = getMainInstance();
+		main.setUI(main.disconnectUI);
+		main.baseUI.mediasoup.clear();
+	}
+	onMessage(message) {
 		let raw = JSON.parse(message.data);
 		if (raw.reply) {
 			let rh = this.replyHandlers.get(raw.reply);
@@ -77,9 +74,8 @@ class NetworkManager {
 		this.extraHandlers.delete(name);
 	}
 	leave() {
+		const main = getMainInstance();
 		this.ws.close();
-		setTimeout(() => this.main.setUI(this.main.connectUI), 100);
+		setTimeout(() => main.setUI(main.connectUI), 100);
 	}
 }
-
-export default NetworkManager;

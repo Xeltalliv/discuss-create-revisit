@@ -1,9 +1,10 @@
-import VideoAreaGrid from "./VideoArea/VideoAreaGrid.mjs"
-import VideoAreaFull from "./VideoArea/VideoAreaFull.mjs"
-import VideoAreaBoardTxt from "./VideoArea/VideoAreaBoardTxt.mjs"
-import VideoAreaBoardImg from "./VideoArea/VideoAreaBoardImg.mjs"
+import { VideoAreaGrid } from "./VideoArea/VideoAreaGrid.mjs";
+import { VideoAreaFull } from "./VideoArea/VideoAreaFull.mjs";
+import { VideoAreaBoardTxt } from "./VideoArea/VideoAreaBoardTxt.mjs";
+import { VideoAreaBoardImg } from "./VideoArea/VideoAreaBoardImg.mjs";
+import { getMainInstance } from "../../main.mjs";
 
-class VideoArea {
+export class VideoArea {
 	constructor(main, baseUI) {
 		const el = document.createElement("div");
 		el.classList.add("baseTopLeft");
@@ -18,6 +19,18 @@ class VideoArea {
 		this.bimgUI = new VideoAreaBoardImg(main, baseUI, this);
 		this.editingBoard = false;
 	}
+	init() {
+		//this.gridUI.init();
+		//this.fullUI.init();
+		//this.btxtUI.init();
+		//this.bimgUI.init();
+	}
+	setButtonsVisible(visible) {
+		this.gridUI.setButtonsVisible(visible);
+		this.fullUI.setButtonsVisible(visible);
+		this.btxtUI.setButtonsVisible(visible);
+		this.bimgUI.setButtonsVisible(visible);
+	}
 	setUI(ui) {
 		if (this.selectedUI) this.selectedUI.el.remove();
 		if (ui) {
@@ -28,6 +41,7 @@ class VideoArea {
 		}
 		this.selectedUI = ui;
 		this.resetEditBoard();
+		getMainInstance().baseUI.rightPanel.boardsUI.setIsFullUI(this.selectedUI == this.fullUI);
 	}
 	setUIByName(name) {
 		let lookup = {
@@ -35,14 +49,17 @@ class VideoArea {
 			"full": this.fullUI,
 			"btxt": this.btxtUI,
 			"bimg": this.bimgUI,
-		}
+		};
 		const ui = lookup[name];
 		this.setUI(ui);
 	}
-	setEditBoard(userId, boardId) {
+	setEditBoard(user, board) {
 		if (!this.editingBoard) {
 			this.editingBoard = true;
-			this.main.networkManager.send("editsBoard", {userId, boardId});
+			this.main.networkManager.send("editsBoard", {
+				"userId": user.id,
+				"boardId": board.id
+			});
 		}
 	}
 	resetEditBoard() {
@@ -57,21 +74,20 @@ class VideoArea {
 		this.btxtUI.update(this.selectedUI == this.btxtUI);
 		this.bimgUI.update(this.selectedUI == this.bimgUI);
 	}
-	selectBoard(userId, boardId) {
+	selectBoard(user, board) {
 		if ((this.selectedUI == this.btxtUI || this.selectedUI == this.bimgUI) &&
-			this.selectedUI.userId == userId &&
-			this.selectedUI.boardId == boardId) {
+			this.selectedUI.user == user &&
+			this.selectedUI.board == board) {
 			this.setUI(this.baseUI.topMain.gridUI);
 			this.baseUI.userManager.updateUserList();
 		} else {
-			const user = this.baseUI.userManager.get(userId);
-			const board = user.boards.get(boardId);
-			let boardUI = board.type == "txt" ? this.btxtUI : this.bimgUI;
-			boardUI.selectBoard(userId, boardId);
+			let boardUI = null;
+			if (board.type == "txt") boardUI = this.btxtUI;
+			if (board.type == "img") boardUI = this.bimgUI;
+			if (boardUI == null) return;
+			boardUI.selectBoard(user, board);
 			this.setUI(boardUI);
 			this.baseUI.userManager.updateUserList();
 		}
 	}
 }
-
-export default VideoArea;

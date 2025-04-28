@@ -1,6 +1,6 @@
 // https://stackoverflow.com/a/6853926
 
-function pointToLineDistance(x, y, x1, y1, x2, y2) {
+export function pointToLineDistance(x, y, x1, y1, x2, y2) {
 	const A = x - x1;
 	const B = y - y1;
 	const C = x2 - x1;
@@ -29,5 +29,3 @@ function pointToLineDistance(x, y, x1, y1, x2, y2) {
 	const dy = y - yy;
 	return Math.sqrt(dx * dx + dy * dy);
 }
-
-export { pointToLineDistance };

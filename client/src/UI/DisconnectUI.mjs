@@ -1,14 +1,15 @@
-class DisconnectUI {
-	constructor(main) {
+import { getMainInstance } from "../main.mjs";
+
+export class DisconnectUI {
+	constructor() {
 		const title = document.createElement("h1");
 		title.textContent = "Disconnected";
 		title.classList.add("mainTitle");
 
 		const buttonBack = document.createElement("button");
+		buttonBack.classList.add("disconnectButton");
 		buttonBack.textContent = "Try reconnecting";
-		buttonBack.addEventListener("click", function() {
-			main.setUI(main.connectUI);
-		});
+		buttonBack.addEventListener("click", this.tryReconnecting.bind(this));
 
 		const reasonDiv = document.createElement("div");
 		reasonDiv.classList.add("disconnectReason");
@@ -27,15 +28,20 @@ class DisconnectUI {
 
 		this.el = el;
 		this.reasonEl = reasonDiv;
-		main.networkManager.addHandler("disconnect", (op, data) => {
-			if (op == "disconnect") {
-				reasonDiv.textContent = "Reason: "+data.reason;
-			}
-		});
+	}
+	init() {
+		getMainInstance().networkManager.addHandler("disconnect", this.onMessage.bind(this));
+	}
+	onMessage(op, data) {
+		if (op == "disconnect") {
+			this.reasonEl.textContent = "Reason: "+data.reason;
+		}
+	}
+	tryReconnecting() {
+		const main = getMainInstance();
+		main.setUI(main.connectUI);
 	}
 	resetReason() {
 		this.reasonEl.textContent = "Unknown reason";
 	}
 }
-
-export default DisconnectUI;

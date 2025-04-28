@@ -5,7 +5,16 @@
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<link href="style.css" rel="stylesheet" />
-		<script src="src/main.mjs" type="module" defer></script>
+		<script type="importmap">
+			{
+				"imports": {
+					"mediasoup-client": "./libs/mediasoup-client.mjs",
+					"marked": "./libs/marked.mjs",
+					"dompurify": "./node_modules/dompurify/dist/purify.es.mjs"
+				}
+			}
+		</script>
+		<script src="src/Main.mjs" type="module" defer></script>
 	</head>
 	<body>
 	</body>

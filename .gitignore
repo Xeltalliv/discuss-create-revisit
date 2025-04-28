@@ -2,3 +2,4 @@ client/node_modules
 client/src/libs
 server/node_modules
 server/ssl
+server/static

@@ -4,9 +4,9 @@ import commonJS from 'rollup-plugin-commonjs'
 
 export default [
   {
-    input: 'mediasoup-client',
+    input: 'src/main.mjs',
     output: [{
-      file: 'src/libs/mediasoup-client.mjs',
+      file: '../server/static/js.mjs',
       format: 'es',
     }],
     plugins: [

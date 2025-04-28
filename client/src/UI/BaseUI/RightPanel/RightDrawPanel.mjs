@@ -1,8 +1,8 @@
-import RightBasePanel from "./RightBasePanel.mjs"
+import { RightBasePanel } from "./RightBasePanel.mjs";
 
-class RightDrawPanel extends RightBasePanel {
-	constructor(main, baseUI) {
-		super(main);
+export class RightDrawPanel extends RightBasePanel {
+	constructor() {
+		super();
 		this.setTitle("Draw options");
 
 		const inputDrawMode = document.createElement("select");
@@ -46,12 +46,12 @@ class RightDrawPanel extends RightBasePanel {
 			mode: this.inputDrawMode.value,
 			size: +this.inputSize.value,
 			color: this.inputColor.value
-		}
+		};
 	}
 }
 
 class DrawOption {
-	constructor(main, data) {
+	constructor(data) {
 		const label = document.createElement("div");
 		label.textContent = data.label;
 		const el = document.createElement("div");
@@ -60,5 +60,3 @@ class DrawOption {
 		this.el = el;
 	}
 }
-
-export default RightDrawPanel;
