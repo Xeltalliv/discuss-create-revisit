@@ -1,6 +1,6 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 
-class Validator {
+export class Validator {
 	constructor(secret) {
 		this.secret = secret;
 	}
@@ -33,5 +33,3 @@ class Validator {
 		return all;
 	}
 }
-
-export default Validator;

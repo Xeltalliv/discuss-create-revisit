@@ -1,6 +1,6 @@
-import Board from "./Board.mjs";
+import { Board } from "./Board.mjs";
 
-class BoardFolder extends Board {
+export class BoardFolder extends Board {
 	constructor(id, userId, data) {
 		super(id, userId, data);
 	}
@@ -13,5 +13,3 @@ class BoardFolder extends Board {
 		super.copyFrom(board);
 	}
 }
-
-export default BoardFolder;

@@ -15,7 +15,7 @@ const mediaCodecs = [
 	},
 ];
 
-class Conference {
+export class Conference {
 	constructor(main, token) {
 		this.main = main;
 		this.token = token;
@@ -213,5 +213,3 @@ class Conference {
 		this.sendToEveryone("conferenceSettings", settings);
 	}
 }
-
-export default Conference;

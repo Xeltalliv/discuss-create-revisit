@@ -1,4 +1,4 @@
-class Line {
+export class Line {
 	constructor(id, data) {
 		this.id = id;
 		this.color = data.color;
@@ -16,5 +16,3 @@ class Line {
 		this.points.push(...points);
 	}
 }
-
-export default Line;

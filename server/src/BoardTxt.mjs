@@ -1,6 +1,6 @@
-import Board from "./Board.mjs";
+import { Board } from "./Board.mjs";
 
-class BoardTxt extends Board {
+export class BoardTxt extends Board {
 	constructor(id, userId, data) {
 		super(id, userId, data);
 		this.data = data.data ?? [];
@@ -36,5 +36,3 @@ class BoardTxt extends Board {
 		conference.sendToEveryone("setBoardEditorId", {"userId":this.userId, "boardId":this.id, "editorId": editorId});
 	}
 }
-
-export default BoardTxt;

@@ -1,7 +1,7 @@
 import os from "node:os";
 import crypto from "node:crypto";
 
-function getLocalIp() {
+export function getLocalIp() {
 	const interfaces = os.networkInterfaces();
 	for(const name in interfaces) {
 		const intfc = interfaces[name];
@@ -14,7 +14,7 @@ function getLocalIp() {
 	return null;
 }
 
-function generateUUID() {
+export function generateUUID() {
 	let lengths = [8, 4, 4, 4, 12];
 	let parts = [];
 	for(let length of lengths) {
@@ -27,7 +27,7 @@ function generateUUID() {
 	return parts.join("-");
 }
 
-function generateMiniUUID() {
+export function generateMiniUUID() {
 	let part = "";
 	for(let i=0; i<12; i++) {
 		part += Math.floor(Math.random()*16).toString(16);
@@ -35,12 +35,10 @@ function generateMiniUUID() {
 	return part;
 }
 
-function generateRandomUserId() {
+export function generateRandomUserId() {
 	return generateUserId(generateUUID());
 }
 
-function generateUserId(string) {
+export function generateUserId(string) {
 	return crypto.createHash("sha256").update(string).digest("hex").substring(32);
 }
-
-export {getLocalIp, generateUUID, generateMiniUUID, generateUserId, generateRandomUserId};

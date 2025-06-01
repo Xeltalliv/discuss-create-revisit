@@ -1,7 +1,7 @@
-import Board from "./Board.mjs";
-import Line from "./Line.mjs";
+import { Board } from "./Board.mjs";
+import { Line } from "./Line.mjs";
 
-class BoardImg extends Board {
+export class BoardImg extends Board {
 	constructor(id, userId, data) {
 		super(id, userId, data);
 		this.data = new Map();
@@ -45,5 +45,3 @@ class BoardImg extends Board {
 		return this.data.delete(id);
 	}
 }
-
-export default BoardImg;

@@ -1,4 +1,4 @@
-class Board {
+export class Board {
 	constructor(id, userId, data) {
 		this.id = id;
 		this.userId = userId;
@@ -20,5 +20,3 @@ class Board {
 		this.folderId = board.folderId;
 	}
 }
-
-export default Board;

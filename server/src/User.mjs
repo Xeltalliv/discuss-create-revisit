@@ -1,11 +1,11 @@
-import Conference from "./Conference.mjs";
-import BoardTxt from "./BoardTxt.mjs";
-import BoardImg from "./BoardImg.mjs";
-import BoardFolder from "./BoardFolder.mjs";
+import { Conference } from "./Conference.mjs";
+import { BoardTxt } from "./BoardTxt.mjs";
+import { BoardImg } from "./BoardImg.mjs";
+import { BoardFolder } from "./BoardFolder.mjs";
 import { generateMiniUUID, generateUserId, generateRandomUserId } from "./Utils.mjs";
 import { apply } from "./TextDiff.mjs";
 
-class User {
+export class User {
 	constructor(main, ws) {
 		this.main = main;
 		this.ws = ws;
@@ -534,5 +534,3 @@ class User {
 		this.conference.sendToEveryone("renameUser", {userId: this.id, newName: newName});
 	}
 }
-
-export default User;

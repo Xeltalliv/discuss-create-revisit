@@ -10,8 +10,8 @@ import mediasoup from "mediasoup";
 import express from "express";
 import cors from "cors";
 
-import Validator from "./Validator.mjs";
-import User from "./User.mjs";
+import { Validator } from "./Validator.mjs";
+import { User } from "./User.mjs";
 import { getLocalIp } from "./Utils.mjs";
 import { FileUploads } from "./FileUploads.mjs";
 
